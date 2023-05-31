@@ -120,9 +120,9 @@ double line_plane_intersection(const Line &line, const Plane &plane){
 
     // Plane and line intersect
     vec3_d line_start = line.get_start();
-    double d = plane_normal[3];
+    double d = normal_form[3];
     double a = glm::dot(line_start, plane_normal) + d;
-    return -a/d;
+    return a/d;
 }
 
 
@@ -131,8 +131,15 @@ double line_plane_intersection(const Line &line, const Plane &plane){
 // ---------- //
 
 int main(){
-    vec4_d nf = {0.0, 1.0, 0.0, 1.0};
-    Plane plane(nf);
-    std::cout << glm::to_string(plane.get_normal()) << std::endl;
+    vec3_d start = {0.0, 0.0, 0.0};
+    vec3_d dir = {4.0, 2.0, 0.0};
+    Line line(start, dir);
+    vec3_d p0 = {1.0, 1.0, 1.0};
+    vec3_d p1 = {1.0, 1.0, 0.0};
+    vec3_d p2 = {0.0, 1.0, 1.0};
+    mat33_d points = {p0, p1, p2};
+    Plane plane(points);
+    double t = line_plane_intersection(line, plane);
+    std::cout << t << std::endl;
     return 0;
 }
