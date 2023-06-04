@@ -21,6 +21,7 @@ std::tuple<int, double> first_non_zero_element(const vec3_d &v){
     return std::make_tuple(-1, 0.0);
 }
 
+
 class Line{
     vec3_d start;
     vec3_d dir;
@@ -49,57 +50,57 @@ class Line{
     }
 };
 
+
 class Plane{
-    mat33_d points;
+    vec3_d p0;
     vec4_d normal_form;
-    vec3_d normal;
+    vec3_d n;
 
   public:
     Plane(){
-        points = mat33_d(1.0);
+
         normal_form = glm::normalize(vec4_d(0.0, 1.0, 0.0, 1.0));
-        normal = normal_form;
+        n = normal_form;
     }
 
-    Plane(const mat33_d &ps){
-        // Initializes 
-        points = ps;
-        vec3_d v1 = glm::normalize(points[1] - points[0]);
-        vec3_d v2 = glm::normalize(points[2] - points[0]);
-        vec3_d n = glm::cross(v1, v2);
-        double d = -1.0*glm::dot(n, ps[0]);
-        normal_form = glm::normalize(glm::vec4(n, d));
-        normal = normal_form;
+    Plane(const mat33_d &pnts){
+        // init from three points
+        p0 = pnts[0];
+        vec3_d v1 = glm::normalize(pnts[1] - pnts[0]);
+        vec3_d v2 = glm::normalize(pnts[2] - pnts[0]);
+        vec3_d v3 = glm::cross(v1, v2);
+        double d = -1.0*glm::dot(v3, pnts[0]);
+        this->normal_form = glm::normalize(glm::vec4(v3, d));
+        this->n = this->normal_form;
     }
 
-    Plane(const glm::vec4 &normform){
-        normal_form = glm::normalize(normform);
-        normal = normal_form;
-        // double d = normal_form[3];
-        // std::tuple<int, double> fnze = first_non_zero_element(normal_form);
-        // int i;
-        // double xi;
-        // std::tie(i, xi) = fnze;
-        // vec3_d p = {0.0, 0.0, 0.0};
-        // vec3_d n = normal_form;
-        // if ( i >= 0 && i <= 2) {
-        //     p[i] = -d/xi;
-        //     vec3_d v2 = glm::cross(v1, n);
-        // }
-        //
+    Plane(const vec4_d &normal_form){
+        // init from normal form only
+        this->normal_form = glm::normalize(normal_form);
+        this->n = normal_form;
+        auto t = first_non_zero_element(n);
+        int i = std::get<0>(t);
+        double ai = std::get<1>(t);
+        double d = this->normal_form[3];
+        this->p0 = {0.0, 0.0, 0.0};
+        this->p0[i] = -ai/d;
     }
 
-    Plane(const vec3_d &n, const vec3_d &p){
-        double d = -1.0*glm::dot(n, p);
-        normal_form = glm::normalize(glm::vec4(n, d));
+    Plane(const vec3_d &normal, const vec3_d &p0){
+        double d = -1.0*glm::dot(normal, p0);
+        this->normal_form = glm::normalize(glm::vec4(normal, d));
     }
 
-    glm::vec4 get_normal_form() const {
+    vec4_d get_normal_form() const {
         return this->normal_form;
     }
 
-    glm::vec3 get_normal() const {
-        return this->normal;
+    vec3_d get_normal() const {
+        return this->n;
+    }
+
+    vec3_d get_p0() const {
+        return this->p0;
     }
 };
 
@@ -131,15 +132,9 @@ double line_plane_intersection(const Line &line, const Plane &plane){
 // ---------- //
 
 int main(){
-    vec3_d start = {0.0, 0.0, 0.0};
-    vec3_d dir = {4.0, 2.0, 0.0};
-    Line line(start, dir);
-    vec3_d p0 = {1.0, 1.0, 1.0};
-    vec3_d p1 = {1.0, 1.0, 0.0};
-    vec3_d p2 = {0.0, 1.0, 1.0};
-    mat33_d points = {p0, p1, p2};
-    Plane plane(points);
-    double t = line_plane_intersection(line, plane);
-    std::cout << t << std::endl;
+    vec4_d normal_form = {1.0, 3.0, -7.0, 21.0};
+    // vec3_d p0 = {}
+    Plane plane(normal_form);
+    std::cout << glm::to_string(plane.get_normal()) << ", " << glm::to_string(plane.get_p0()) << std::endl;
     return 0;
 }
