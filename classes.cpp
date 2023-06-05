@@ -14,9 +14,7 @@ typedef glm::mat<3, 3, double> mat33_d;
 
 
 const double PERCISION = 1.0E-7;
-
-
-double inf = std::numeric_limits<double>::infinity();
+const double inf = std::numeric_limits<double>::infinity();
 
 
 int first_non_zero_index(const vec3_d &v){
@@ -94,8 +92,10 @@ class Plane{
 
     Plane(const vec3_d &normal, const vec3_d &p0){
         double nlen = glm::length(normal);
-        this->normal = glm::normalize(normal);
-        // TODO!!!
+        this->n = glm::normalize(normal);
+        double d = -glm::dot(p0, this->n);
+        this->normal_form = vec4_d(this->n, d);
+        this->p0 = p0;
     }
 
     vec4_d get_normal_form() const {
@@ -121,20 +121,11 @@ class Plane{
 // ----------- //
 
 double line_plane_intersection(const Line &line, const Plane &plane){
-    vec3_d line_dir = line.get_direction();
-    vec4_d normal_form = plane.get_normal_form();
-    vec3_d plane_normal = normal_form;
-    double n_dot_l = glm::dot(line_dir, plane_normal);
-
-    // Plane and line are parallel
-    if ( n_dot_l == 0.0 )
+    double l_dot_n = glm::dot(line.get_direction(), plane.get_n());
+    if ( glm::epsilonEqual(l_dot_n, 0.0, PERCISION) )
         return inf;
-
-    // Plane and line intersect
-    vec3_d line_start = line.get_start();
-    double d = normal_form[3];
-    double a = glm::dot(line_start, plane_normal) + d;
-    return a/d;
+    double a = glm::dot(line.get_start()-plane.get_p0(), plane.get_n());
+    return -a/l_dot_n;
 }
 
 
@@ -143,12 +134,25 @@ double line_plane_intersection(const Line &line, const Plane &plane){
 // ---------- //
 
 int main(){
-    vec4_d normal_form = {1.0, 3.0, -7.0, 21.0};
-    vec3_d p = {-2,3,4.};
-    Plane plane(normal_form);
-    double f = 1.0/plane.get_n()[0];
-    std::cout << glm::to_string(f*plane.get_normal_form()) << std::endl;
-    std::cout << plane.point_in_plane(p) << std::endl;
+    // vec3_d plane_n = {.0, 1.0, .0};
+    // vec3_d plane_p0 = {1.0, 1.0, -1.0};
+    // Plane plane(plane_n, plane_p0);
+
+    // vec4_d normal_form = {.0, 1.0, .0, -1.0};
+    // Plane plane(normal_form);
+
+    vec3_d p0 = {1.0, -1.432, 1.0};
+    vec3_d p1 = {4.2, -1.432, -3.5};
+    vec3_d p2 = {4.4, -1.432, -5.5};
+    mat33_d points = {p0, p1, p2};
+    Plane plane(points);
+
+    vec3_d line_start = {.0, .0, .0};
+    vec3_d line_dir = {.0, 1.0, .0};
+    Line line(line_start, line_dir);
+
+    double t = line_plane_intersection(line, plane);
+    std::cout << t << std::endl;
 
     return 0;
 }
