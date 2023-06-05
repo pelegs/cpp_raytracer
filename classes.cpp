@@ -6,21 +6,32 @@
 #include <vector>
 #include <tuple>
 #include <limits>
+#include <stdexcept>
 
 
+typedef glm::vec<2, double> vec2_d;
 typedef glm::vec<3, double> vec3_d;
 typedef glm::vec<4, double> vec4_d;
 typedef glm::mat<3, 3, double> mat33_d;
 
 
+// General constants
 const double PERCISION = 1.0E-7;
 const double inf = std::numeric_limits<double>::infinity();
+
+// Vector constants
+const vec2_d Zero2 = {.0, .0};
+const vec3_d Zero3 = {.0, .0, .0};
+const vec4_d Zero4 = {.0, .0, .0, .0};
+const vec3_d X_ = {1.0, .0, .0};
+const vec3_d Y_ = {.0, 1.0, .0};
+const vec3_d Z_ = {.0, .0, 1.0};
 
 
 int first_non_zero_index(const vec3_d &v){
     for ( int i=0; i<3; i++ )
         if ( v[i] != 0.0 ) return i;
-    return -1; // should raise a value error
+    throw std::logic_error("zero vector can't be used for direction");
 }
 
 
@@ -83,7 +94,6 @@ class Plane{
         double nflen = glm::length(norm);
         this->n = glm::normalize(norm);
         double d = normal_form[3]/nflen;
-        // std::cout << glm::to_string(this->n) << ": " << nflen << " -> d=" << d << std::endl;
         this->normal_form = vec4_d(this->n, d);
         int i = first_non_zero_index(normal_form);
         this->p0 = {0.0, 0.0, 0.0};
@@ -110,7 +120,7 @@ class Plane{
         return this->p0;
     }
 
-    bool point_in_plane(const vec3_d &p) const{
+    bool point_in_plane(const vec3_d &p) const {
         return glm::epsilonEqual(glm::dot(p, this->n)+this->normal_form[3], 0.0, PERCISION);
     }
 };
@@ -128,35 +138,17 @@ double line_plane_intersection(const Line &line, const Plane &plane){
     return -a/l_dot_n;
 }
 
+vec3_d reflect(const vec3_d &r, const vec3_d &n){
+    // Returns the direction of a reflected ray r by a point with normal n.
+    // Note: assumes ray direction r is normalized!
+    return r - 2.0 * n * glm::dot(r, n);
+}
+
 
 // ---------- //
 // -- MAIN -- //
 // ---------- //
 
 int main(){
-    // vec3_d plane_n = {.0, 1.0, .0};
-    // vec3_d plane_p0 = {1.0, 1.0, -1.0};
-    // Plane plane(plane_n, plane_p0);
-
-    vec4_d normal_form = {2.0, -3.0, 1.0, -3.0};
-    Plane plane(normal_form);
-    std::cout << glm::to_string(plane.get_p0()) << std::endl;
-
-    // vec3_d p0 = {1.0, -1.432, 1.0};
-    // vec3_d p1 = {4.2, -1.432, -3.5};
-    // vec3_d p2 = {4.4, -1.432, -5.5};
-    // mat33_d points = {p0, p1, p2};
-    // Plane plane(points);
-
-    vec3_d line_start = {-1.0, 4.0, 1.0};
-    vec3_d line_dir = {2.0, -5.0, 1.0};
-    Line line(line_start, line_dir);
-
-    double t = line_plane_intersection(line, plane);
-    std::cout << glm::to_string(line.point_at(t)) << std::endl;
-
-    vec3_d w = {3./5., .0, 9./5.};
-    std::cout << plane.point_in_plane(plane.get_p0()) << std::endl;
-
     return 0;
 }
