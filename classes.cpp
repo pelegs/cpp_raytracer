@@ -87,7 +87,7 @@ class Plane{
         this->normal_form = vec4_d(this->n, d);
         int i = first_non_zero_index(normal_form);
         this->p0 = {0.0, 0.0, 0.0};
-        this->p0[i] = -d/normal_form[i];
+        this->p0[i] = -d/this->n[i];
     }
 
     Plane(const vec3_d &normal, const vec3_d &p0){
@@ -138,21 +138,25 @@ int main(){
     // vec3_d plane_p0 = {1.0, 1.0, -1.0};
     // Plane plane(plane_n, plane_p0);
 
-    // vec4_d normal_form = {.0, 1.0, .0, -1.0};
-    // Plane plane(normal_form);
+    vec4_d normal_form = {2.0, -3.0, 1.0, -3.0};
+    Plane plane(normal_form);
+    std::cout << glm::to_string(plane.get_p0()) << std::endl;
 
-    vec3_d p0 = {1.0, -1.432, 1.0};
-    vec3_d p1 = {4.2, -1.432, -3.5};
-    vec3_d p2 = {4.4, -1.432, -5.5};
-    mat33_d points = {p0, p1, p2};
-    Plane plane(points);
+    // vec3_d p0 = {1.0, -1.432, 1.0};
+    // vec3_d p1 = {4.2, -1.432, -3.5};
+    // vec3_d p2 = {4.4, -1.432, -5.5};
+    // mat33_d points = {p0, p1, p2};
+    // Plane plane(points);
 
-    vec3_d line_start = {.0, .0, .0};
-    vec3_d line_dir = {.0, 1.0, .0};
+    vec3_d line_start = {-1.0, 4.0, 1.0};
+    vec3_d line_dir = {2.0, -5.0, 1.0};
     Line line(line_start, line_dir);
 
     double t = line_plane_intersection(line, plane);
-    std::cout << t << std::endl;
+    std::cout << glm::to_string(line.point_at(t)) << std::endl;
+
+    vec3_d w = {3./5., .0, 9./5.};
+    std::cout << plane.point_in_plane(plane.get_p0()) << std::endl;
 
     return 0;
 }
