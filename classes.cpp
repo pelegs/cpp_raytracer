@@ -18,17 +18,19 @@ typedef glm::mat<3, 3, double> mat33_d;
 // General constants
 const double PERCISION = 1.0E-7;
 const double inf = std::numeric_limits<double>::infinity();
+const double pi = glm::pi<double>();
 
-// Vector constants
+// Vector and matrix constants
 const vec2_d Zero2 = {.0, .0};
 const vec3_d Zero3 = {.0, .0, .0};
 const vec4_d Zero4 = {.0, .0, .0, .0};
 const vec3_d X_ = {1.0, .0, .0};
 const vec3_d Y_ = {.0, 1.0, .0};
 const vec3_d Z_ = {.0, .0, 1.0};
+const mat33_d I3 = {X_, Y_, Z_};
 
 
-int first_non_zero_index(const vec3_d &v){
+int first_non_zero_index(const vec3_d &v) {
     for ( int i=0; i<3; i++ )
         if ( v[i] != 0.0 ) return i;
     throw std::logic_error("zero vector can't be used for direction");
@@ -40,17 +42,17 @@ class Line{
     vec3_d dir;
 
   public:
-    Line(){
+    Line() {
         start = vec3_d{0.0, 0.0, 0.0};
         dir = vec3_d{0.0, 0.0, 0.0};
     }
 
-    Line(const vec3_d &init_pos, const vec3_d &direction){
+    Line(const vec3_d &init_pos, const vec3_d &direction) {
         start = init_pos;
         dir = glm::normalize(direction);
     }
 
-    vec3_d point_at(double t){
+    vec3_d point_at(double t) {
         return this->start + t*this->dir;
     }
 
@@ -70,13 +72,13 @@ class Plane{
     vec3_d n;
 
   public:
-    Plane(){
+    Plane() {
 
         normal_form = glm::normalize(vec4_d(0.0, 1.0, 0.0, 1.0));
         n = normal_form;
     }
 
-    Plane(const mat33_d &pnts){
+    Plane(const mat33_d &pnts) {
         // init from three points
         p0 = pnts[0];
         vec3_d v1 = glm::normalize(pnts[1] - pnts[0]);
@@ -88,7 +90,7 @@ class Plane{
         // TODO: check that this is correct!
     }
 
-    Plane(const vec4_d &normal_form){
+    Plane(const vec4_d &normal_form) {
         // init from normal form only
         vec3_d norm = normal_form;
         double nflen = glm::length(norm);
@@ -100,7 +102,7 @@ class Plane{
         this->p0[i] = -d/this->n[i];
     }
 
-    Plane(const vec3_d &normal, const vec3_d &p0){
+    Plane(const vec3_d &normal, const vec3_d &p0) {
         double nlen = glm::length(normal);
         this->n = glm::normalize(normal);
         double d = -glm::dot(p0, this->n);
@@ -130,7 +132,7 @@ class Plane{
 // -- FUNCS -- //
 // ----------- //
 
-double line_plane_intersection(const Line &line, const Plane &plane){
+double line_plane_intersection(const Line &line, const Plane &plane) {
     double l_dot_n = glm::dot(line.get_direction(), plane.get_n());
     if ( glm::epsilonEqual(l_dot_n, 0.0, PERCISION) )
         return inf;
@@ -138,7 +140,7 @@ double line_plane_intersection(const Line &line, const Plane &plane){
     return -a/l_dot_n;
 }
 
-vec3_d reflect(const vec3_d &r, const vec3_d &n){
+vec3_d reflect(const vec3_d &r, const vec3_d &n) {
     // Returns the direction of a reflected ray r by a point with normal n.
     // Note: assumes ray direction r is normalized!
     return r - 2.0 * n * glm::dot(r, n);
@@ -149,6 +151,8 @@ vec3_d reflect(const vec3_d &r, const vec3_d &n){
 // -- MAIN -- //
 // ---------- //
 
-int main(){
+int main() {
+    // srand(time(NULL));
+    // TODO: write function to rotate Nx3 matrices by t around ax.
     return 0;
 }
