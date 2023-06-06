@@ -19,6 +19,11 @@ typedef glm::mat<3, 3, double> mat33_d;
 const double PERCISION = 1.0E-7;
 const double inf = std::numeric_limits<double>::infinity();
 const double pi = glm::pi<double>();
+const double two_pi = 2.0*pi;
+const double half_pi = glm::half_pi<double>();
+const double third_pi = pi/3.0;
+const double quarter_pi = half_pi/2.0;
+const double sixth_pi = third_pi/2.0;
 
 // Vector and matrix constants
 const vec2_d Zero2 = {.0, .0};
@@ -146,13 +151,55 @@ vec3_d reflect(const vec3_d &r, const vec3_d &n) {
     return r - 2.0 * n * glm::dot(r, n);
 }
 
+double angle_between(const vec3_d &u, const vec3_d &v) {
+    double sqrt_norms = glm::sqrt(glm::length2(u)*glm::length2(v)); // saves a single sqrt calculation
+    return glm::acos(glm::dot(u, v)/sqrt_norms);
+}
+
+vec3_d axis_between(const vec3_d &u, const vec3_d &v) {
+    return glm::normalize(glm::cross(u, v));
+}
+
+vec3_d rand_vec_solid_angle(const double &th) {
+    // Generate a random point on a sphere (uniformly distributed)
+    vec3_d u = glm::sphericalRand(1.0);
+
+    // Find angle and axis from pt to Z_=(0,0,1)
+    double phi = angle_between(u, Z_);
+    vec3_d ax = axis_between(u, Z_);
+
+    // If point already inside solid angle th, return it
+    if (phi < th) return u;
+
+    // Otherwise, rotate pt around ax in a random angle psi ∈ [phi-th, phi],
+    // bringing it inside solid angle th
+    double psi = glm::linearRand(phi-th, phi);
+    vec3_d r = glm::rotate(u, psi, ax);
+
+    return r;
+}
+
+vec3_d rand_vec_solid_angle_in_direction(const vec3_d &dir, const double &th) {
+    double phi = angle_between(Z_, dir);
+    vec3_d ax = axis_between(Z_, dir);
+    vec3_d random = rand_vec_solid_angle(th);
+    return glm::rotate(random, phi, ax);
+}
+
 
 // ---------- //
 // -- MAIN -- //
 // ---------- //
 
 int main() {
-    // srand(time(NULL));
-    // TODO: write function to rotate Nx3 matrices by t around ax.
+    srand(time(NULL));
+    vec3_d rand;
+    vec3_d dir = glm::sphericalRand(1.0);
+    int N = 1000;
+    for (int i=0; i<N; i++) {
+        rand = rand_vec_solid_angle_in_direction(dir, quarter_pi);
+        std::cout << printf("%0.5f %0.5f %0.5f", rand.x, rand.y, rand.z) << std::endl;
+    }
+
     return 0;
 }
