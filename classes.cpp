@@ -24,6 +24,8 @@ const double half_pi = glm::half_pi<double>();
 const double third_pi = pi/3.0;
 const double quarter_pi = half_pi/2.0;
 const double sixth_pi = third_pi/2.0;
+const double sqrt_2 = glm::root_two<double>();
+const double one_over_sqrt_2 = 1.0/sqrt_2;
 
 // Vector and matrix constants
 const vec2_d Zero2 = {.0, .0};
@@ -38,11 +40,61 @@ const vec4_d O4_ = {.0, .0, .0, .0};
 const mat33_d I3 = {X_, Y_, Z_};
 
 
+// ------------------- //
+// -- GENERAL FUNCS -- //
+// ------------------- //
+
 int first_non_zero_index(const vec3_d &v)
 {
     for ( int i=0; i<3; i++ )
         if ( v[i] != 0.0 ) return i;
     throw std::logic_error("zero vector can't be used for direction");
+}
+
+vec3_d reflect_ray(const vec3_d &r, const vec3_d &n)
+{
+    // Returns the direction of a reflected ray r by a point with normal n.
+    // Note: assumes ray direction r is normalized!
+    return r - 2.0 * n * glm::dot(r, n);
+}
+
+double angle_between(const vec3_d &u, const vec3_d &v)
+{
+    double sqrt_norms = glm::sqrt(glm::length2(u)*glm::length2(v)); // saves a single sqrt calculation
+    return glm::acos(glm::dot(u, v)/sqrt_norms);
+}
+
+vec3_d axis_between(const vec3_d &u, const vec3_d &v)
+{
+    return glm::normalize(glm::cross(u, v));
+}
+
+vec3_d rand_vec_solid_angle(const double &th)
+{
+    // Generate a random point on a sphere (uniformly distributed)
+    vec3_d u = glm::sphericalRand(1.0);
+
+    // Find angle and axis from pt to Z_=(0,0,1)
+    double phi = angle_between(u, Z_);
+    vec3_d ax = axis_between(u, Z_);
+
+    // If point already inside solid angle th, return it
+    if (phi < th) return u;
+
+    // Otherwise, rotate pt around ax in a random angle psi ∈ [phi-th, phi],
+    // bringing it inside solid angle th
+    double psi = glm::linearRand(phi-th, phi);
+    vec3_d r = glm::rotate(u, psi, ax);
+
+    return r;
+}
+
+vec3_d rand_vec_solid_angle_in_direction(const vec3_d &dir, const double &th)
+{
+    double phi = angle_between(Z_, dir);
+    vec3_d ax = axis_between(Z_, dir);
+    vec3_d random = rand_vec_solid_angle(th);
+    return glm::rotate(random, phi, ax);
 }
 
 
@@ -90,7 +142,6 @@ class Plane
   public:
     Plane()
     {
-
         normal_form = glm::normalize(vec4_d(0.0, 1.0, 0.0, 1.0));
         n = normal_form;
     }
@@ -123,7 +174,6 @@ class Plane
 
     Plane(const vec3_d &normal, const vec3_d &p0)
     {
-        double nlen = glm::length(normal);
         this->n = glm::normalize(normal);
         double d = -glm::dot(p0, this->n);
         this->normal_form = vec4_d(this->n, d);
@@ -156,7 +206,7 @@ class Hittable {
     int id;
     int type;
 
-public:
+  public:
     vec3_d reflect(const vec3_d &pos, const vec3_d &dir)
     {
         return -Y_;
@@ -164,9 +214,50 @@ public:
 };
 
 
-// ----------- //
-// -- FUNCS -- //
-// ----------- //
+class Sphere: public Hittable
+{
+    vec3_d center;
+    double radius;
+    double radius2;
+
+  public:
+    Sphere()
+    {
+        center = O3_;
+        radius = 1.0;
+        radius2 = 1.0;
+    }
+
+    Sphere(const vec3_d &p, const double &r)
+    {
+        this->center = p;
+        this->radius = r;
+        this->radius2 = r*r;
+    }
+
+    bool point_on_surface(const vec3_d &p) const
+    {
+        double dist2 = glm::distance2(this->center, p);
+        return glm::epsilonEqual(dist2, this->radius2, PERCISION);
+    }
+
+    vec3_d normal_at_surface(const vec3_d &p) const
+    {
+        // Should check if p on surface?..
+        return glm::normalize(p-this->center);
+    }
+
+    vec3_d reflect(const vec3_d &pos, const vec3_d &dir) const
+    {
+        return reflect_ray(dir, this->normal_at_surface(pos));
+    }
+
+};
+
+
+// ------------------------ //
+// -- FUNCS WITH CLASSES -- //
+// ------------------------ //
 
 double line_plane_intersection(const Line &line, const Plane &plane)
 {
@@ -177,68 +268,15 @@ double line_plane_intersection(const Line &line, const Plane &plane)
     return -a/l_dot_n;
 }
 
-vec3_d reflect(const vec3_d &r, const vec3_d &n)
-{
-    // Returns the direction of a reflected ray r by a point with normal n.
-    // Note: assumes ray direction r is normalized!
-    return r - 2.0 * n * glm::dot(r, n);
-}
-
-double angle_between(const vec3_d &u, const vec3_d &v)
-{
-    double sqrt_norms = glm::sqrt(glm::length2(u)*glm::length2(v)); // saves a single sqrt calculation
-    return glm::acos(glm::dot(u, v)/sqrt_norms);
-}
-
-vec3_d axis_between(const vec3_d &u, const vec3_d &v)
-{
-    return glm::normalize(glm::cross(u, v));
-}
-
-vec3_d rand_vec_solid_angle(const double &th)
-{
-    // Generate a random point on a sphere (uniformly distributed)
-    vec3_d u = glm::sphericalRand(1.0);
-
-    // Find angle and axis from pt to Z_=(0,0,1)
-    double phi = angle_between(u, Z_);
-    vec3_d ax = axis_between(u, Z_);
-
-    // If point already inside solid angle th, return it
-    if (phi < th) return u;
-
-    // Otherwise, rotate pt around ax in a random angle psi ∈ [phi-th, phi],
-    // bringing it inside solid angle th
-    double psi = glm::linearRand(phi-th, phi);
-    vec3_d r = glm::rotate(u, psi, ax);
-
-    return r;
-}
-
-vec3_d rand_vec_solid_angle_in_direction(const vec3_d &dir, const double &th)
-{
-    double phi = angle_between(Z_, dir);
-    vec3_d ax = axis_between(Z_, dir);
-    vec3_d random = rand_vec_solid_angle(th);
-    return glm::rotate(random, phi, ax);
-}
-
-
 // ---------- //
 // -- MAIN -- //
 // ---------- //
 
 int main()
 {
-    srand(time(NULL));
-    vec3_d rand;
-    vec3_d dir = glm::sphericalRand(1.0);
-    int N = 1000;
-    for (int i=0; i<N; i++)
-    {
-        rand = rand_vec_solid_angle_in_direction(dir, quarter_pi);
-        std::cout << printf("%0.5f %0.5f %0.5f", rand.x, rand.y, rand.z) << std::endl;
-    }
+    // srand(time(NULL));
+    Sphere s;
+    std::cout << glm::to_string(s.reflect(X_, -X_+Y_)) << std::endl;
 
     return 0;
 }
