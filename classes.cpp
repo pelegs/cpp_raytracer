@@ -32,58 +32,71 @@ const vec4_d Zero4 = {.0, .0, .0, .0};
 const vec3_d X_ = {1.0, .0, .0};
 const vec3_d Y_ = {.0, 1.0, .0};
 const vec3_d Z_ = {.0, .0, 1.0};
+const vec2_d O2_ = {.0, .0};
+const vec3_d O3_ = {.0, .0, .0};
+const vec4_d O4_ = {.0, .0, .0, .0};
 const mat33_d I3 = {X_, Y_, Z_};
 
 
-int first_non_zero_index(const vec3_d &v) {
+int first_non_zero_index(const vec3_d &v)
+{
     for ( int i=0; i<3; i++ )
         if ( v[i] != 0.0 ) return i;
     throw std::logic_error("zero vector can't be used for direction");
 }
 
 
-class Line{
+class Line
+{
     vec3_d start;
     vec3_d dir;
 
   public:
-    Line() {
+    Line()
+    {
         start = vec3_d{0.0, 0.0, 0.0};
         dir = vec3_d{0.0, 0.0, 0.0};
     }
 
-    Line(const vec3_d &init_pos, const vec3_d &direction) {
+    Line(const vec3_d &init_pos, const vec3_d &direction)
+    {
         start = init_pos;
         dir = glm::normalize(direction);
     }
 
-    vec3_d point_at(double t) {
+    vec3_d point_at(double t)
+    {
         return this->start + t*this->dir;
     }
 
-    vec3_d get_start() const {
+    vec3_d get_start() const
+    {
         return this->start;
     }
 
-    vec3_d get_direction() const {
+    vec3_d get_direction() const
+    {
         return this->dir;
     }
 };
 
 
-class Plane{
+class Plane
+{
     vec3_d p0;
     vec4_d normal_form;
     vec3_d n;
 
   public:
-    Plane() {
+    Plane()
+    {
 
         normal_form = glm::normalize(vec4_d(0.0, 1.0, 0.0, 1.0));
         n = normal_form;
     }
 
-    Plane(const mat33_d &pnts) {
+    Plane(const mat33_d &pnts)
+    {
         // init from three points
         p0 = pnts[0];
         vec3_d v1 = glm::normalize(pnts[1] - pnts[0]);
@@ -95,7 +108,8 @@ class Plane{
         // TODO: check that this is correct!
     }
 
-    Plane(const vec4_d &normal_form) {
+    Plane(const vec4_d &normal_form)
+    {
         // init from normal form only
         vec3_d norm = normal_form;
         double nflen = glm::length(norm);
@@ -107,7 +121,8 @@ class Plane{
         this->p0[i] = -d/this->n[i];
     }
 
-    Plane(const vec3_d &normal, const vec3_d &p0) {
+    Plane(const vec3_d &normal, const vec3_d &p0)
+    {
         double nlen = glm::length(normal);
         this->n = glm::normalize(normal);
         double d = -glm::dot(p0, this->n);
@@ -115,20 +130,36 @@ class Plane{
         this->p0 = p0;
     }
 
-    vec4_d get_normal_form() const {
+    vec4_d get_normal_form() const
+    {
         return this->normal_form;
     }
 
-    vec3_d get_n() const {
+    vec3_d get_n() const
+    {
         return this->n;
     }
 
-    vec3_d get_p0() const {
+    vec3_d get_p0() const
+    {
         return this->p0;
     }
 
-    bool point_in_plane(const vec3_d &p) const {
+    bool point_in_plane(const vec3_d &p) const
+    {
         return glm::epsilonEqual(glm::dot(p, this->n)+this->normal_form[3], 0.0, PERCISION);
+    }
+};
+
+
+class Hittable {
+    int id;
+    int type;
+
+public:
+    vec3_d reflect(const vec3_d &pos, const vec3_d &dir)
+    {
+        return -Y_;
     }
 };
 
@@ -137,7 +168,8 @@ class Plane{
 // -- FUNCS -- //
 // ----------- //
 
-double line_plane_intersection(const Line &line, const Plane &plane) {
+double line_plane_intersection(const Line &line, const Plane &plane)
+{
     double l_dot_n = glm::dot(line.get_direction(), plane.get_n());
     if ( glm::epsilonEqual(l_dot_n, 0.0, PERCISION) )
         return inf;
@@ -145,22 +177,26 @@ double line_plane_intersection(const Line &line, const Plane &plane) {
     return -a/l_dot_n;
 }
 
-vec3_d reflect(const vec3_d &r, const vec3_d &n) {
+vec3_d reflect(const vec3_d &r, const vec3_d &n)
+{
     // Returns the direction of a reflected ray r by a point with normal n.
     // Note: assumes ray direction r is normalized!
     return r - 2.0 * n * glm::dot(r, n);
 }
 
-double angle_between(const vec3_d &u, const vec3_d &v) {
+double angle_between(const vec3_d &u, const vec3_d &v)
+{
     double sqrt_norms = glm::sqrt(glm::length2(u)*glm::length2(v)); // saves a single sqrt calculation
     return glm::acos(glm::dot(u, v)/sqrt_norms);
 }
 
-vec3_d axis_between(const vec3_d &u, const vec3_d &v) {
+vec3_d axis_between(const vec3_d &u, const vec3_d &v)
+{
     return glm::normalize(glm::cross(u, v));
 }
 
-vec3_d rand_vec_solid_angle(const double &th) {
+vec3_d rand_vec_solid_angle(const double &th)
+{
     // Generate a random point on a sphere (uniformly distributed)
     vec3_d u = glm::sphericalRand(1.0);
 
@@ -179,7 +215,8 @@ vec3_d rand_vec_solid_angle(const double &th) {
     return r;
 }
 
-vec3_d rand_vec_solid_angle_in_direction(const vec3_d &dir, const double &th) {
+vec3_d rand_vec_solid_angle_in_direction(const vec3_d &dir, const double &th)
+{
     double phi = angle_between(Z_, dir);
     vec3_d ax = axis_between(Z_, dir);
     vec3_d random = rand_vec_solid_angle(th);
@@ -191,12 +228,14 @@ vec3_d rand_vec_solid_angle_in_direction(const vec3_d &dir, const double &th) {
 // -- MAIN -- //
 // ---------- //
 
-int main() {
+int main()
+{
     srand(time(NULL));
     vec3_d rand;
     vec3_d dir = glm::sphericalRand(1.0);
     int N = 1000;
-    for (int i=0; i<N; i++) {
+    for (int i=0; i<N; i++)
+    {
         rand = rand_vec_solid_angle_in_direction(dir, quarter_pi);
         std::cout << printf("%0.5f %0.5f %0.5f", rand.x, rand.y, rand.z) << std::endl;
     }
