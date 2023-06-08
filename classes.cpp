@@ -7,6 +7,9 @@
 #include <tuple>
 #include <limits>
 #include <stdexcept>
+#include <cassert>
+// Use (void) to silence unused warnings.
+#define assertm(exp, msg) assert(((void)msg, exp))
 
 
 typedef glm::vec<2, double> vec2_d;
@@ -102,6 +105,10 @@ vec3_d rand_vec_solid_angle_in_direction(const vec3_d &dir, const double &th)
 }
 
 
+// ------------- //
+// -- CLASSES -- //
+// ------------- //
+
 class Line
 {
     vec3_d start;
@@ -139,60 +146,34 @@ class Line
 
 class Plane
 {
-    vec3_d n, v1, v2;
-    vec4_d normal_form;
+    double d;
+    vec3_d v1, v2, n;
     mat33_d pts;
 
   public:
     Plane()
     {
-        normal_form = vec4_d(0.0, 1.0, 0.0, -1.0);
-        n = normal_form;
+        d = -1.0;
+        v1 = Z_;
+        v2 = X_;
+        n = Y_;
         vec3_d p0 = {1.0, 1.0, 0.0};
         vec3_d p1 = {0.0, 1.0, 1.0};
         vec3_d p2 = {0.0, 1.0, 0.0};
         pts = {p0, p1, p2};
     }
 
-    // TODO: correct Plane init!!
-
     Plane(const mat33_d &pts)
     {
-        // init from three points
         this->pts = pts;
-        v1 = pts[1] - pts[0];
-        v2 = pts[2] - pts[0];
-        n = glm::normalize(glm::cross(v1, v2));
-        double d = -1.0*glm::dot(n, pts[0]);
-        normal_form = vec4_d(n, d);
-        // TODO: check that this is correct!
+        v1 = glm::normalize(pts[1] - pts[0]);
+        v2 = glm::normalize(pts[2] - pts[0]);
+        n = glm::cross(v1, v2);
+        std::cout << "|v1|=" << glm::length(v1) << " |v2|=" << glm::length(v2) << " |n|=" << glm::length(n) << std::endl;
+        d = -glm::dot(n, pts[0]);
     }
 
-    // Plane(const vec4_d &normal_form)
-    // {
-    //     // init from normal form only
-    //     vec3_d norm = normal_form;
-    //     double nflen = glm::length(norm);
-    //     this->n = glm::normalize(norm);
-    //     double d = normal_form[3]/nflen;
-    //     this->normal_form = vec4_d(this->n, d);
-    //     int i = first_non_zero_index(normal_form);
-    //     this->p0 = {0.0, 0.0, 0.0};
-    //     this->p0[i] = -d/this->n[i];
-    // }
-    //
-    // Plane(const vec3_d &normal, const vec3_d &p0)
-    // {
-    //     this->n = glm::normalize(normal);
-    //     double d = -glm::dot(p0, this->n);
-    //     this->normal_form = vec4_d(this->n, d);
-    //     this->p0 = p0;
-    // }
-
-    vec4_d get_normal_form() const
-    {
-        return this->normal_form;
-    }
+    // TODO: correct Plane init!!
 
     vec3_d get_n() const
     {
@@ -206,7 +187,27 @@ class Plane
 
     bool point_in_plane(const vec3_d &p) const
     {
-        return glm::epsilonEqual(glm::dot(p, this->n)+this->normal_form[3], 0.0, PERCISION);
+        return glm::epsilonEqual(glm::dot(p, this->n)+this->d, 0.0, PERCISION);
+    }
+
+    bool validate() const
+    {
+        for (int i=0; i<3; i++)
+        {
+            // test that point p_i conforms to n*p_i =-d
+            assert(glm::epsilonEqual(glm::dot(this->pts[i], this->n), -1.0*this->d, PERCISION));
+            // test that point p_i is on plane
+            assert(this->point_in_plane(this->pts[i]));
+        }
+
+        // test that n=v1Xv2
+        assert(glm::all(glm::epsilonEqual(glm::cross(this->v1, this->v2), this->n, PERCISION)));
+
+        // test that n is unit length
+        assert(glm::epsilonEqual(glm::length2(this->n), 1.0, PERCISION));
+
+        // passing all tests
+        return 1;
     }
 };
 
@@ -304,14 +305,13 @@ double line_plane_intersection(const Line &line, const Plane &plane)
 
 int main()
 {
-    // srand(time(NULL));
-    vec3_d p0 = {1.0, 0.0, 5.0};
-    vec3_d p1 = {0.0, 1.0, 5.0};
-    vec3_d p2 = {1.0, 1.0, 5.0};
+    srand(time(NULL));
+    vec3_d p0 = glm::sphericalRand(1.0);
+    vec3_d p1 = glm::sphericalRand(1.0);
+    vec3_d p2 = glm::sphericalRand(1.0);
     mat33_d pts = {p0, p1, p2};
-    // Triangle t(pts);
-    Plane t;
-    std::cout << glm::to_string(t.get_n()) << std::endl;
+    Plane p(pts);
+    p.validate();
 
     return 0;
 }
