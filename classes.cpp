@@ -112,6 +112,27 @@ vec3d rand_vec_solid_angle_in_direction(const vec3d &dir, const double &th)
 }
 
 
+// --------------- //
+// -- OPERATORS -- //
+// --------------- //
+
+mat33d operator+(const mat33d &M, const vec3d &v)
+{
+    mat33d newM = {M};
+    for (int i=0; i<3; i++)
+        newM[i] += v;
+    return newM;
+}
+
+mat33d operator-(const mat33d &M, const vec3d &v)
+{
+    mat33d newM = {M};
+    for (int i=0; i<3; i++)
+        newM[i] -= v;
+    return newM;
+}
+
+
 // ------------- //
 // -- CLASSES -- //
 // ------------- //
@@ -299,26 +320,23 @@ class Sphere: public Hittable
 };
 
 
-// class Triangle: public Plane, public Hittable
-// {
-//     mat33d pts;
-//
-//   public:
-//     Triangle(): Plane()
-//     {
-//         std::cout << glm::to_string(this->get_normal_form()) << std::endl;
-//     }
-//
-//     Triangle(const mat33d &pts): Plane(pts)
-//     {
-//         this->pts = {this->get_p0(), pts[1], pts[2]}; // yes, this is strange.
-//     }
-//
-//     mat33d get_pts() const
-//     {
-//         return this->pts;
-//     }
-// };
+class Triangle: public Plane, public Hittable
+{
+
+  public:
+    Triangle(): Plane(){};
+    Triangle(const mat33d &pts): Plane(pts){};
+
+    bool point_inside(const vec3d &pt) const
+    {
+        mat33d trans_pts = this->get_pts()-pt;
+        vec3d u = glm::cross(trans_pts[1], trans_pts[2]);
+        vec3d v = glm::cross(trans_pts[2], trans_pts[0]);
+        vec3d w = glm::cross(trans_pts[0], trans_pts[1]);
+        if ( glm::dot(u, v) < 0.0 || glm::dot(u, w) < 0.0 ) return 0;
+        return 1;
+    }
+};
 
 
 // ------------------------ //
@@ -340,12 +358,24 @@ double line_plane_intersection(const Line &line, const Plane &plane)
 
 int main()
 {
-    srand(time(NULL));
-    vec3d pt = glm::sphericalRand(1.0);
-    vec3d v1 = glm::sphericalRand(1.0);
-    vec3d v2 = glm::sphericalRand(1.0);
-    Plane p(pt, v1, v2);
-    p.validate();
+    double th0 = 3*half_pi;
+    double th1 = pi;
+    double th2 = 0.0;
+    vec3d p0 = {glm::cos(th0), glm::sin(th0), 0.0};
+    vec3d p1 = {glm::cos(th1), glm::sin(th1), 0.0};
+    vec3d p2 = {glm::cos(th2), glm::sin(th2), 0.0};
+    mat33d pts = {p0, p1, p2};
+    Triangle t(pts);
 
+    srand(time(NULL));
+    int N = 10000;
+    vec2d x;
+    vec3d y;
+    for (int i=0; i<N; i++)
+    {
+        x = glm::sphericalRand(1.0);
+        y = vec3d(x, 0.0);
+        std::cout << y[0] << " " << y[1] << " " << t.point_inside(y) << std::endl;
+    }
     return 0;
 }
