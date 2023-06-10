@@ -6,6 +6,7 @@
 #include <vector>
 #include <tuple>
 #include <limits>
+#include <format>
 #include <stdexcept>
 #include <cassert>
 // Use (void) to silence unused warnings.
@@ -18,6 +19,21 @@ typedef glm::vec<4, double> vec4d;
 typedef glm::mat<2, 2, double> mat22d;
 typedef glm::mat<3, 3, double> mat33d;
 typedef glm::mat<4, 4, double> mat44d;
+typedef glm::vec<3, float> color3f;
+
+
+// Colors
+const color3f WHITE = {1.0, 1.0, 1.0};
+const color3f BLACK = {0.0, 0.0, 0.0};
+const color3f GREY = {0.5, 0.5, 0.5};
+const color3f RED = {1.0, 0.0, 0.0};
+const color3f GREEN = {0.0, 1.0, 0.0};
+const color3f BLUE = {0.0, 0.0, 1.0};
+const color3f PURPLE = {1.0, 0.0, 1.0};
+const color3f ORANGE = {1.0, 0.5, 0.3};
+const int R = 0;
+const int G = 1;
+const int B = 2;
 
 
 // General constants
@@ -271,8 +287,21 @@ class Plane
 class Hittable {
     int id;
     int type;
+    color3f color;
 
   public:
+    Hittable() {color=WHITE;};
+    Hittable(const color3f &c) {color=c;};
+    std::string get_color(){
+        char buff[100];
+        std::sprintf(
+            buff, "%0.3f, %0.3f, %0.3f",
+            this->color[R], this->color[G], this->color[B]
+        );
+        std::string sout = buff;
+        return sout;
+    }
+
     vec3d reflect(const vec3d &pos, const vec3d &dir)
     {
         return -Y_;
@@ -324,8 +353,8 @@ class Triangle: public Plane, public Hittable
 {
 
   public:
-    Triangle(): Plane(){};
-    Triangle(const mat33d &pts): Plane(pts){};
+    Triangle(): Plane(), Hittable() {};
+    Triangle(const mat33d &pts, const color3f &color): Plane(pts), Hittable(color) {};
 
     bool point_inside(const vec3d &pt) const
     {
@@ -365,17 +394,20 @@ int main()
     vec3d p1 = {glm::cos(th1), glm::sin(th1), 0.0};
     vec3d p2 = {glm::cos(th2), glm::sin(th2), 0.0};
     mat33d pts = {p0, p1, p2};
-    Triangle t(pts);
+    // Triangle t(pts);
+    //
+    // srand(time(NULL));
+    // int N = 10000;
+    // vec2d x;
+    // vec3d y;
+    // for (int i=0; i<N; i++)
+    // {
+    //     x = glm::sphericalRand(1.0);
+    //     y = vec3d(x, 0.0);
+    //     std::cout << y[0] << " " << y[1] << " " << t.point_inside(y) << std::endl;
+    // }
 
-    srand(time(NULL));
-    int N = 10000;
-    vec2d x;
-    vec3d y;
-    for (int i=0; i<N; i++)
-    {
-        x = glm::sphericalRand(1.0);
-        y = vec3d(x, 0.0);
-        std::cout << y[0] << " " << y[1] << " " << t.point_inside(y) << std::endl;
-    }
+    Triangle t(pts, color3f(0.4, 0.2, 0.75));
+    std::cout << t.get_color() << std::endl;
     return 0;
 }
