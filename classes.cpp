@@ -346,6 +346,21 @@ class Sphere: public Hittable
     {
         return reflect_ray(dir, this->normal_at_surface(pos));
     }
+
+    vec3d get_center() const
+    {
+        return this->center;
+    }
+
+    double get_r() const
+    {
+        return this->radius;
+    }
+
+    double get_r2() const
+    {
+        return this->radius2;
+    }
 };
 
 
@@ -381,33 +396,35 @@ double line_plane_intersection(const Line &line, const Plane &plane)
     return -a/l_dot_n;
 }
 
+
+double line_sphere_intersection(const Line &line, const Sphere &sphere)
+{
+    vec3d o = line.get_start();
+    vec3d u = line.get_direction();
+    vec3d c = sphere.get_center();
+    double d = glm::dot(o, u-c);
+    double D =  d*d - glm::length2(o-c) + sphere.get_r2();
+    if ( D <= 0.0 ) return D;
+    double sqrtD = glm::sqrt(D);
+    double dot_u_oc = -1.0*glm::dot(u, o-c);
+    double t1 = dot_u_oc + sqrtD;
+    double t2 = dot_u_oc - sqrtD;
+    return glm::min(t1, t2);
+}
+
+
 // ---------- //
 // -- MAIN -- //
 // ---------- //
 
 int main()
 {
-    double th0 = 3*half_pi;
-    double th1 = pi;
-    double th2 = 0.0;
-    vec3d p0 = {glm::cos(th0), glm::sin(th0), 0.0};
-    vec3d p1 = {glm::cos(th1), glm::sin(th1), 0.0};
-    vec3d p2 = {glm::cos(th2), glm::sin(th2), 0.0};
-    mat33d pts = {p0, p1, p2};
-    // Triangle t(pts);
-    //
     // srand(time(NULL));
-    // int N = 10000;
-    // vec2d x;
-    // vec3d y;
-    // for (int i=0; i<N; i++)
-    // {
-    //     x = glm::sphericalRand(1.0);
-    //     y = vec3d(x, 0.0);
-    //     std::cout << y[0] << " " << y[1] << " " << t.point_inside(y) << std::endl;
-    // }
 
-    Triangle t(pts, color3f(0.4, 0.2, 0.75));
-    std::cout << t.get_color() << std::endl;
+    Line line(-3.5*Z_, Z_);
+    Sphere sphere(O3_, 2.0);
+    double t = line_sphere_intersection(line, sphere);
+    std::cout << t << std::endl;
+
     return 0;
 }
