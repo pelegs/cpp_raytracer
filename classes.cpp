@@ -302,7 +302,7 @@ class Hittable {
         return sout;
     }
 
-    vec3d reflect(const vec3d &pos, const vec3d &dir)
+    vec3d reflect(const vec3d &pos, const vec3d &dir) const
     {
         return -Y_;
     }
@@ -366,7 +366,6 @@ class Sphere: public Hittable
 
 class Triangle: public Plane, public Hittable
 {
-
   public:
     Triangle(): Plane(), Hittable() {};
     Triangle(const mat33d &pts, const color3f &color): Plane(pts), Hittable(color) {};
@@ -381,6 +380,35 @@ class Triangle: public Plane, public Hittable
         return 1;
     }
 };
+
+
+class Screen: public Plane
+{
+    int w, h;
+    double AR, AR_half, AR_inv, AR_inv_half;
+
+  public:
+    Screen(): Plane()
+    {
+        w = 640; h=480;
+        AR = (double)w/(double)h;
+        AR_half = 0.5*AR;
+        AR_inv = 1.0/AR;
+        AR_inv_half = 0.5*AR_inv;
+        std::sprintf(
+    };
+
+    std::string get_attributes() const
+    {
+        char data[256];
+        std::sprintf(
+            data,
+            "w=%03d, h=%03d\nAR=%0.3f, AR/2=%0.3f, AR_inv=%0.3f, AR_inv/2=%0.3f",
+            this->w, this->h, this->AR, this->AR_inv, this->AR_half, this->AR_inv_half
+        )
+        return data;
+    }
+}
 
 
 // ------------------------ //
