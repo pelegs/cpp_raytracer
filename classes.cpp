@@ -99,6 +99,12 @@ vec3d axis_between(const vec3d &u, const vec3d &v)
     return glm::normalize(glm::cross(u, v));
 }
 
+vec3d rotate_vec_by_pt(const vec3d v, const double th, const vec3d axis, const vec3d point)
+{
+    vec3d trans_v = glm::rotate(v-point, th, axis);
+    return trans_v+point;
+}
+
 vec3d rand_vec_solid_angle(const double &th)
 {
     // Generate a random point on a sphere (uniformly distributed)
@@ -415,9 +421,7 @@ class Screen: public Plane
         cntr_wcs = {0.0, 1.0, 0.0};
 
         // screen vectors
-        v1 = glm::normalize(se_wcs - sw_wcs);
-        v2 = glm::normalize(nw_wcs - sw_wcs);
-        n = glm::normalize(glm::cross(v2, v1));
+        this->calc_screen_vecs();
     }
 
     void get_attributes() const
@@ -429,18 +433,44 @@ class Screen: public Plane
         "Screen vectors: v1=" << glm::to_string(this->v1) << " v2=" << glm::to_string(this->v2) << " n=" << glm::to_string(this->n) <<
         std::endl;
     }
+
+    void calc_screen_vecs()
+    {
+        this->v1 = glm::normalize(this->se_wcs - this->sw_wcs);
+        this->v2 = glm::normalize(this->nw_wcs - this->sw_wcs);
+        this->n = glm::normalize(glm::cross(this->v2, this->v1));
+    }
+
+    void rotate_by_point(const double &t, const vec3d &ax, const vec3d &pt)
+    {
+        this->nw_wcs = rotate_vec_by_pt(this->nw_wcs, t, ax, pt);
+        this->ne_wcs = rotate_vec_by_pt(this->ne_wcs, t, ax, pt);
+        this->se_wcs = rotate_vec_by_pt(this->se_wcs, t, ax, pt);
+        this->sw_wcs = rotate_vec_by_pt(this->sw_wcs, t, ax, pt);
+        this->cntr_wcs = rotate_vec_by_pt(this->cntr_wcs, t, ax, pt);
+        // re-calculate screen vectors
+        this->calc_screen_vecs();
+    }
+
+    void rotate_by_center(const double &t, const vec3d &ax)
+    {
+        this->rotate_by_point(t, ax, this->cntr_wcs);
+    }
+
+    void translate(const vec3d &dr)
+    {
+        this->nw_wcs += dr;
+        this->ne_wcs += dr;
+        this->se_wcs += dr;
+        this->sw_wcs += dr;
+        this->cntr_wcs += dr;
+    }
 };
 
 
 // ------------------------ //
 // -- FUNCS WITH CLASSES -- //
 // ------------------------ //
-
-vec3d rotate_around_point(const vec3d v, const double th, const vec3d axis, const vec3d point)
-{
-    vec3d trans_v = glm::rotate(v-point, th, axis);
-    return trans_v+point;
-}
 
 double line_plane_intersection(const Line &line, const Plane &plane)
 {
@@ -476,9 +506,9 @@ int main()
 {
     // srand(time(NULL));
 
-    vec3d p = {0.5, 0.0, 0.0};
-    vec3d rot = rotate_around_point(X_, 3*half_pi, Z_, p);
-    std::cout << glm::to_string(rot) << std::endl;
+    Screen screen;
+    screen.rotate_by_center(half_pi, Y_);
+    screen.get_attributes();
 
     return 0;
 }
