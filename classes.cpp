@@ -386,34 +386,61 @@ class Screen: public Plane
 {
     int w, h;
     double AR, AR_half, AR_inv, AR_inv_half;
+    vec2d nw_scs, ne_scs, se_scs, sw_scs, cntr_scs;
+    vec3d nw_wcs, ne_wcs, se_wcs, sw_wcs, cntr_wcs,
+          v1, v2, n;
 
   public:
     Screen(): Plane()
     {
+        // resolution related (AR=Aspect Ratio)
         w = 640; h=480;
         AR = (double)w/(double)h;
         AR_half = 0.5*AR;
         AR_inv = 1.0/AR;
         AR_inv_half = 0.5*AR_inv;
-        std::sprintf(
-    };
 
-    std::string get_attributes() const
-    {
-        char data[256];
-        std::sprintf(
-            data,
-            "w=%03d, h=%03d\nAR=%0.3f, AR/2=%0.3f, AR_inv=%0.3f, AR_inv/2=%0.3f",
-            this->w, this->h, this->AR, this->AR_inv, this->AR_half, this->AR_inv_half
-        )
-        return data;
+        // important points in SCREEN coordinate system
+        nw_scs = {0.0, 0.0};
+        ne_scs = {1.0, 0.0};
+        se_scs = {1.0, AR_inv};
+        sw_scs = {0.0, AR_inv};
+        cntr_scs = {0.5, AR_inv_half};
+
+        // important points in WORLD coordinate system
+        nw_wcs = {-0.5, 1.0, AR_inv_half};
+        ne_wcs = {0.5, 1.0, AR_inv_half};
+        se_wcs = {0.5, 1.0, -AR_inv_half};
+        sw_wcs = {-0.5, 1.0, -AR_inv_half};
+        cntr_wcs = {0.0, 1.0, 0.0};
+
+        // screen vectors
+        v1 = glm::normalize(se_wcs - sw_wcs);
+        v2 = glm::normalize(nw_wcs - sw_wcs);
+        n = glm::normalize(glm::cross(v2, v1));
     }
-}
+
+    void get_attributes() const
+    {
+        std::cout <<
+        "Resolution: w=" << this->w << " h=" << this->h << " AR=" << this->AR <<  " AR_inv=" << this->AR_inv << std::endl <<
+        "Screen CS points: NW=" << glm::to_string(this->nw_scs) << " NE=" << glm::to_string(this->ne_scs) << " SE=" << glm::to_string(this->se_scs) << " SW=" << glm::to_string(this->sw_scs) << " center=" << glm::to_string(this->cntr_scs) << std::endl <<
+        "World CS points: NW=" << glm::to_string(this->nw_wcs) << " NE=" << glm::to_string(this->ne_wcs) << " SE=" << glm::to_string(this->se_wcs) << " SW=" << glm::to_string(this->sw_wcs) << " center=" << glm::to_string(this->cntr_wcs) << std::endl <<
+        "Screen vectors: v1=" << glm::to_string(this->v1) << " v2=" << glm::to_string(this->v2) << " n=" << glm::to_string(this->n) <<
+        std::endl;
+    }
+};
 
 
 // ------------------------ //
 // -- FUNCS WITH CLASSES -- //
 // ------------------------ //
+
+vec3d rotate_around_point(const vec3d v, const double th, const vec3d axis, const vec3d point)
+{
+    vec3d trans_v = glm::rotate(v-point, th, axis);
+    return trans_v+point;
+}
 
 double line_plane_intersection(const Line &line, const Plane &plane)
 {
@@ -449,10 +476,9 @@ int main()
 {
     // srand(time(NULL));
 
-    Line line(-3.5*Z_, Z_);
-    Sphere sphere(O3_, 2.0);
-    double t = line_sphere_intersection(line, sphere);
-    std::cout << t << std::endl;
+    vec3d p = {0.5, 0.0, 0.0};
+    vec3d rot = rotate_around_point(X_, 3*half_pi, Z_, p);
+    std::cout << glm::to_string(rot) << std::endl;
 
     return 0;
 }
