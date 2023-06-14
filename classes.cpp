@@ -392,8 +392,9 @@ class Screen: public Plane
     int w, h;
     double AR, AR_half, AR_inv, AR_inv_half;
     vec2d nw_scs, ne_scs, se_scs, sw_scs, cntr_scs;
-    vec3d nw_wcs, ne_wcs, se_wcs, sw_wcs, cntr_wcs,
-          v1, v2, n;
+    vec3d nw_wcs, ne_wcs, se_wcs, sw_wcs, cntr_wcs;
+    mat33d basis_vecs, basis_vecs_inv;
+    std::vector<std::vector<color3f>> matrix;
 
   public:
     Screen(): Plane()
@@ -420,8 +421,12 @@ class Screen: public Plane
         cntr_wcs = {0.0, 1.0, 0.0};
 
         // screen vectors
-        this->calc_screen_vecs();
-    }
+        calc_screen_vecs();
+
+        // screen matrix
+        std::vector<std::vector<color3f>> matrix2(w, std::vector<color3f>(h));
+        matrix = matrix2;
+        }
 
     void get_attributes() const
     {
@@ -429,15 +434,23 @@ class Screen: public Plane
         "Resolution: w=" << this->w << " h=" << this->h << " AR=" << this->AR <<  " AR_inv=" << this->AR_inv << std::endl <<
         "Screen CS points: NW=" << glm::to_string(this->nw_scs) << " NE=" << glm::to_string(this->ne_scs) << " SE=" << glm::to_string(this->se_scs) << " SW=" << glm::to_string(this->sw_scs) << " center=" << glm::to_string(this->cntr_scs) << std::endl <<
         "World CS points: NW=" << glm::to_string(this->nw_wcs) << " NE=" << glm::to_string(this->ne_wcs) << " SE=" << glm::to_string(this->se_wcs) << " SW=" << glm::to_string(this->sw_wcs) << " center=" << glm::to_string(this->cntr_wcs) << std::endl <<
-        "Screen vectors: v1=" << glm::to_string(this->v1) << " v2=" << glm::to_string(this->v2) << " n=" << glm::to_string(this->n) <<
+        "Screen vectors: v1=" << glm::to_string(this->basis_vecs[0]) << " v2=" << glm::to_string(this->basis_vecs[1]) << " n=" << glm::to_string(this->basis_vecs[2]) <<
         std::endl;
     }
 
     void calc_screen_vecs()
     {
-        this->v1 = glm::normalize(this->se_wcs - this->sw_wcs);
-        this->v2 = glm::normalize(this->nw_wcs - this->sw_wcs);
-        this->n = glm::normalize(glm::cross(this->v2, this->v1));
+        vec3d v1 = glm::normalize(this->se_wcs - this->sw_wcs);
+        vec3d v2 = glm::normalize(this->nw_wcs - this->sw_wcs);
+        vec3d n = glm::normalize(glm::cross(v2, v1));
+        this->basis_vecs = mat33d(v1, v2, n);
+        this->basis_vecs_inv = glm::inverse(this->basis_vecs);
+        std::cout << glm::to_string(this->basis_vecs*this->basis_vecs_inv) << std::endl;
+    }
+
+    vec3d sc_to_wc(const vec2d &sc)
+    {
+
     }
 
     void rotate_by_point(const double &t, const vec3d &ax, const vec3d &pt)
@@ -454,6 +467,7 @@ class Screen: public Plane
     void rotate_by_center(const double &t, const vec3d &ax)
     {
         this->rotate_by_point(t, ax, this->cntr_wcs);
+        this->calc_screen_vecs();
     }
 
     void translate(const vec3d &dr)
@@ -554,10 +568,6 @@ int main()
     // srand(time(NULL));
 
     Screen screen;
-    Camera camera(O3_, Y_, screen);
-    camera.get_screen()->get_attributes();
-    camera.zoom(-2.0);
-    camera.get_screen()->get_attributes();
 
     return 0;
 }
