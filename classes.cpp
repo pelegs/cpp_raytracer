@@ -6,7 +6,6 @@
 #include <vector>
 #include <tuple>
 #include <limits>
-#include <format>
 #include <stdexcept>
 #include <cassert>
 // Use (void) to silence unused warnings.
@@ -468,6 +467,54 @@ class Screen: public Plane
 };
 
 
+class Camera
+{
+    vec3d pos, dir;
+    Screen screen;
+
+  public:
+    Camera()
+    {
+        pos = O3_;
+        dir = Y_;
+        Screen screen;
+    }
+
+    Camera(const vec3d &pos, const vec3d &dir, const Screen &screen)
+    {
+        this->pos = pos;
+        this->dir = dir;
+        this->screen = screen;
+    }
+
+    void translate(const vec3d &dx)
+    {
+        this->pos += dx;
+        this->screen.translate(dx);
+    }
+
+    void rotate(const double &t, const vec3d &ax)
+    {
+        this->dir = rotate_vec_by_pt(this->dir, t, ax, this->pos);
+        this->screen.rotate_by_point(t, ax, this->pos);
+    }
+
+    void zoom(const double &f)
+    {
+        if ( f <= 0.0 ) return;
+        vec3d new_dir = f*this->dir;
+        vec3d dx = new_dir - this->dir;
+        this->dir = new_dir;
+        this->screen.translate(dx);
+    }
+
+    Screen* get_screen()
+    {
+        return &this->screen;
+    }
+};
+
+
 // ------------------------ //
 // -- FUNCS WITH CLASSES -- //
 // ------------------------ //
@@ -507,8 +554,10 @@ int main()
     // srand(time(NULL));
 
     Screen screen;
-    screen.rotate_by_center(half_pi, Y_);
-    screen.get_attributes();
+    Camera camera(O3_, Y_, screen);
+    camera.get_screen()->get_attributes();
+    camera.zoom(-2.0);
+    camera.get_screen()->get_attributes();
 
     return 0;
 }
