@@ -12,6 +12,7 @@
 #define assertm(exp, msg) assert(((void)msg, exp))
 
 
+typedef glm::vec<2, int> vec2i;
 typedef glm::vec<2, double> vec2d;
 typedef glm::vec<3, double> vec3d;
 typedef glm::vec<4, double> vec4d;
@@ -130,6 +131,11 @@ vec3d rand_vec_solid_angle_in_direction(const vec3d &dir, const double &th)
     vec3d ax = axis_between(Z_, dir);
     vec3d random = rand_vec_solid_angle(th);
     return glm::rotate(random, phi, ax);
+}
+
+vec2i vec2d_to_vec2i(const vec2d &sc)
+{
+    return vec2i((int)sc.x, (int)sc.y); // there must be a better way to do this...
 }
 
 
@@ -457,6 +463,12 @@ class Screen: public Plane
         return wc3d;
     }
 
+    vec2i sc_to_pixel(const vec2d &sc)
+    {
+        // TODO: solve edge cases (x=1.0 or y=AR)!
+        return vec2d_to_vec2i(sc * this->w);
+    }
+
     void rotate_by_point(const double &t, const vec3d &ax, const vec3d &pt)
     {
         this->nw_wcs = rotate_vec_by_pt(this->nw_wcs, t, ax, pt);
@@ -570,11 +582,9 @@ int main()
     // srand(time(NULL));
 
     Screen screen;
-    screen.rotate_by_center(half_pi, Y_);
-    screen.translate(5.0*Y_);
-    vec2d p_sc = {0.0, 0.0};
-    vec3d p_wc = screen.sc_to_wc(p_sc);
-    std::cout << glm::to_string(p_wc) << std::endl;
+    vec2d pt_sc = {0.5, 0.375};
+    vec2i pxl_index = screen.sc_to_pixel(pt_sc);
+    std::cout << glm::to_string(pxl_index) << std::endl;
 
     return 0;
 }
